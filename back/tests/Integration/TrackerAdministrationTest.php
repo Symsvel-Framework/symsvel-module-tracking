@@ -7,6 +7,22 @@ namespace SymSvel\Module\Tracking\Tests\Integration;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Schema\Schema;
+use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\ORMSetup;
+use Doctrine\ORM\Tools\SchemaTool;
+use Doctrine\Persistence\ManagerRegistry;
+use SymSvel\Module\Gdpr\Consent\BrowserConsentToken;
+use SymSvel\Module\Gdpr\Consent\TrustedConsentOrigin;
+use SymSvel\Module\Gdpr\Retention\AnonymizationRequirementRegistry;
+use SymSvel\Module\Gdpr\Retention\PurgePolicy;
+use SymSvel\Module\Gdpr\Settings\GdprConfiguration;
+use SymSvel\Module\Gdpr\Settings\GdprSettingDefinitionProvider;
+use SymSvel\Module\Settings\Entity\Setting;
+use SymSvel\Module\Settings\Repository\SettingRepository;
+use SymSvel\Module\Settings\Service\SettingManager;
+use SymSvel\Module\Settings\Service\SettingRegistry;
+use SymSvel\Module\Settings\Service\SettingSecretCipher;
+use SymSvel\Module\Tracking\Controller\AuthorizedTrackersController;
 use DoctrineMigrations\Version20261127120001;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
@@ -132,6 +148,69 @@ final class TrackerAdministrationTest extends TestCase
         self::assertCount(1, $authorized->forVisitor('front', $token, true, $now));
         $selection->save('front', $token, $renewed->version, [$id => ['revision' => 3, 'granted' => false]], true, 6, $now);
         self::assertSame([], $authorized->forVisitor('front', $token, true, $now));
+    }
+
+    public function testPublicProjectionRequiresTrustedOriginSignedCredentialAndCurrentVersion(): void
+    {
+        require_once dirname(__DIR__, 3).'/vendor/symsvel-framework/module-gdpr/Migration/Version20261127143001.php';
+        $schema = new Schema();
+        (new \ReflectionClass(\DoctrineMigrations\Version20261127143001::class))->newInstanceWithoutConstructor()->up($schema);
+        foreach ($schema->toSql($this->db->getDatabasePlatform()) as $sql) {
+            $this->db->executeStatement($sql);
+        }
+        $orm = ORMSetup::createAttributeMetadataConfiguration([dirname((new \ReflectionClass(Setting::class))->getFileName())], true);
+        $orm->enableNativeLazyObjects(true);
+        $em = new EntityManager($this->db, $orm);
+        (new SchemaTool($em))->createSchema([$em->getClassMetadata(Setting::class)]);
+        $registry = $this->createMock(ManagerRegistry::class);
+        $registry->method('getManagerForClass')->with(Setting::class)->willReturn($em);
+        $requirements = new AnonymizationRequirementRegistry([]);
+        $settings = new SettingManager(new SettingRegistry([new GdprSettingDefinitionProvider($requirements)]),
+            new SettingRepository($registry), $em, new SettingSecretCipher('tracking-settings-test-secret'));
+        $configuration = new GdprConfiguration($settings, $requirements, new PurgePolicy());
+        $tokens = new BrowserConsentToken(str_repeat('a', 32));
+        $credential = $tokens->issue('front');
+        $visitor = $tokens->verify('front', $credential);
+        $consents = new ConsentRepository($this->db);
+        $policy = new ConsentPolicy();
+        $selection = new ConsentSelection(new ConsentCatalogue([new TrackerConsentPurposeProvider($this->repository)]), $consents, $policy);
+        $authorized = new AuthorizedTrackers($this->repository, $consents, $policy, new TrackingPolicy());
+        $controller = new AuthorizedTrackersController($authorized, $selection, $tokens,
+            new TrustedConsentOrigin('https://app.example.test', 'https://front.example.test'), $configuration);
+        $request = static function (string $version, ?string $token, string $origin = 'https://front.example.test', string $scheme = 'https'): Request {
+            $headers = ['HTTP_ORIGIN' => $origin, 'CONTENT_TYPE' => 'application/json'];
+            if ($token !== null) {
+                $headers['HTTP_AUTHORIZATION'] = 'Bearer '.$token;
+            }
+            return Request::create($scheme.'://api.example.test/apiopen/tracking/front/authorized', 'POST', [], [], [], $headers,
+                json_encode(['version' => $version], JSON_THROW_ON_ERROR));
+        };
+        $id = $this->administration->create($this->payload())->definition->id;
+        $this->administration->update($id, 1, [...$this->payload(), 'active' => true]);
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $grant = $selection->save('front', $visitor, null, [$id => ['revision' => 2, 'granted' => true]], true, 6, $now);
+        self::assertSame(401, $controller->authorized($request($grant->version, null), 'front')->getStatusCode());
+        self::assertSame(401, $controller->authorized($request($grant->version, $tokens->issue('app')), 'front')->getStatusCode());
+        self::assertSame(403, $controller->authorized($request($grant->version, $credential, 'https://evil.example.test'), 'front')->getStatusCode());
+        self::assertSame(403, $controller->authorized($request($grant->version, $credential, scheme: 'http'), 'front')->getStatusCode());
+        self::assertSame(403, $controller->authorized($request($grant->version, $credential), 'bo')->getStatusCode());
+        $response = $controller->authorized($request($grant->version, $credential), 'front');
+        self::assertSame(200, $response->getStatusCode());
+        self::assertTrue($response->headers->hasCacheControlDirective('no-store'));
+        $data = json_decode((string) $response->getContent(), true, 8, JSON_THROW_ON_ERROR)['data'];
+        self::assertSame($grant->version, $data['version']);
+        self::assertSame('G-ABC123', $data['trackers'][0]['identifier']);
+        $withdrawal = $selection->save('front', $visitor, $grant->version, [$id => ['revision' => 2, 'granted' => false]], true, 6, $now);
+        self::assertSame(409, $controller->authorized($request($grant->version, $credential), 'front')->getStatusCode());
+        self::assertSame([], $authorized->forVisitor('front', $visitor, true, $now, $grant->version));
+        $response = $controller->authorized($request($withdrawal->version, $credential), 'front');
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame([], json_decode((string) $response->getContent(), true, 8, JSON_THROW_ON_ERROR)['data']['trackers']);
+        $this->administration->update($id, 2, [...$this->payload(), 'active' => true]);
+        self::assertSame(409, $controller->authorized($request($withdrawal->version, $credential), 'front')->getStatusCode());
+        $settings->set('gdpr.enabled', false);
+        $settings->flush();
+        self::assertSame(409, $controller->authorized($request($withdrawal->version, $credential), 'front')->getStatusCode());
     }
 
     public function testInvalidScopeAndExecutableFieldsNeverReachDatabase(): void

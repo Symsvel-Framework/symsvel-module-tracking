@@ -14,6 +14,7 @@ use SymSvel\Module\Tracking\Consent\AuthorizedTrackers;
 use SymSvel\Module\Tracking\Catalog\TrackerRepository;
 use SymSvel\Module\Tracking\Catalog\TrackerAdministration;
 use SymSvel\Module\Tracking\Controller\BoTrackingController;
+use SymSvel\Module\Tracking\Controller\AuthorizedTrackersController;
 use SymSvel\Module\Tracking\Permission\TrackingPermissionProvider;
 use SymSvel\Module\Tracking\Provider\GoogleAnalyticsProvider;
 use SymSvel\Module\Tracking\Provider\MetaPixelProvider;
@@ -28,6 +29,7 @@ final class TrackingBundle extends AbstractBundle
         $builder->register(AuthorizedTrackers::class)->setAutowired(true);
         $builder->register(TrackerRepository::class)->setAutowired(true);
         $builder->register(TrackerAdministration::class)->setAutowired(true);
+        $builder->register(AuthorizedTrackersController::class)->setAutowired(true)->addTag('controller.service_arguments');
         $builder->register(BoTrackingController::class)->setAutowired(true)->addTag('controller.service_arguments');
         $builder->register(TrackingPermissionProvider::class)->addTag('symsvel.acls.permission_provider');
         foreach ([GoogleAnalyticsProvider::class, MetaPixelProvider::class] as $provider) {

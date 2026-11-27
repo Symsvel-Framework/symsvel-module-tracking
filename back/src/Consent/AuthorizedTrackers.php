@@ -20,13 +20,13 @@ final readonly class AuthorizedTrackers
     }
 
     /** @return list<array{subject: string, revision: int, provider: string, identifier: string}> */
-    public function forVisitor(string $scope, ?string $visitorToken, bool $gdprEnabled, \DateTimeImmutable $now): array
+    public function forVisitor(string $scope, ?string $visitorToken, bool $gdprEnabled, \DateTimeImmutable $now, ?string $expectedVersion = null): array
     {
         if (!$gdprEnabled || $visitorToken === null || !in_array($scope, ['app', 'front'], true)) {
             return [];
         }
         $snapshot = $this->consents->find($visitorToken, $scope);
-        if ($snapshot === null) {
+        if ($snapshot === null || ($expectedVersion !== null && $snapshot->version !== $expectedVersion)) {
             return [];
         }
         $result = [];

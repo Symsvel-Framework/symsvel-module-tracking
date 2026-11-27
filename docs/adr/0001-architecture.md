@@ -30,3 +30,7 @@ La table du catalogue est détenue par Tracking. Création inactive, identifiant
 ## Contrat GDPR
 
 Le catalogue Tracking expose ses finalités au provider natif GDPR, qui détient les décisions. AuthorizedTrackers constitue une projection interne par jeton, scope et révision ; aucune donnée de chargement n'est retournée sans décision positive courante. L'installation du module permet la configuration ; chaque traceur est désactivable. Aucun endpoint public ou loader n'est encore activé. Dépendance de branche provisoire avant intégration dev et versionnement stable.
+
+## Projection de chargement
+
+Le serveur ne publie les paramètres techniques des traceurs que via POST /apiopen/tracking/{app|front}/authorized, avec origine mappée, jeton GDPR signé et version de sélection courante et complète. La réponse ne contient que les grants actifs et versionnés du scope. Une erreur ou un conflit bloque le chargement. Les tests exercent le retrait, les origines, la désactivation GDPR et les changements de révision. Le client reste responsable de la revalidation et de l'arrêt des SDK ; aucune prétention à un arrêt distant instantané. Aucun chargement n'est encore activé.
