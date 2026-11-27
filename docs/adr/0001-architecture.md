@@ -22,3 +22,7 @@ La première brique TrackingPolicy fournit un contrôle pur et défensif : scope
 - Tests de validation des fournisseurs/scopes, refus BO côté serveur et client, défaut fermé, absence de requêtes avant consentement, retrait et modification de configuration.
 - Tests navigateur avec requêtes réseau contrôlées, sans solliciter les vrais services tiers en CI.
 - CI, CT XT sur les quatre SGBD, installations BO seules et avec interfaces facultatives, documentation dev/admin/user, revue du mainteneur. Pas d'intégration automatique au Setup ou de release fonctionnelle avant validation.
+
+## Première persistance (27/11/2026)
+
+La table du catalogue est détenue par Tracking. Création inactive, identifiant aléatoire non recyclé, révision positive ; toute modification incrémente la révision par comparaison atomique de la révision attendue. Le retrait fonctionnel désactive l'entrée au lieu de supprimer son identité. La première API est réservée au BO, protégée par les ACL list/manage ; elle ne publie aucun catalogue public avant raccordement au consentement GDPR. Les migrations restent au format Schema existant et les tests d'intégration exercent SQLite. Les trois autres SGBD et le parcours Flex/Tooling devront être validés dans XT.
