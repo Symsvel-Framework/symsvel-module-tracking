@@ -22,7 +22,8 @@
     },
     "require-dev": {
         "phpunit/phpunit": "^13.4",
-        "doctrine/migrations": "^3.9"
+        "doctrine/migrations": "^3.9",
+        "symsvel-framework/module-settings": "dev-dev"
     },
     "scripts": {
         "test": "phpunit -c back/phpunit.xml.dist",
