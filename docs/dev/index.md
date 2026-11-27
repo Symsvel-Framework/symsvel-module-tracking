@@ -33,3 +33,5 @@ API BO : `GET /apibo/tracking` (ACL tracking:list, catalogue, fournisseurs et ca
 ## Interface BO (27/11/2026)
 
 Le module déclare navigation.ts (ACL tracking:list et probe GET /apibo/tracking) et la route /tracking. Le tableau réutilise DataTable, recherche, tri et pagination ; le formulaire Modal utilise InputField, Dropdown, Button et Alert du BO, avec choix App/Front seulement. La création transmet les champs éditables sans active ni revision ; la modification et l'activation/désactivation transmettent la révision attendue. Un 409 indique une édition concurrente, sans écraser le catalogue. Dictionnaires FR/EN sous bo/src/lib/translations et surcharge par generatedTranslation. L'interface est statique et ne charge aucun SDK. CI assemble le module dans le BO hôte dev, vérifie TypeScript/lint/build et exécute les tests unitaires de présentation. CT navigateur et intégration GDPR restent requis.
+
+Correctif du contrôle TypeScript de l'assemblage BO : les limites `maxlength` des composants InputField sont transmises comme nombres, conformément au contrat HTMLInputAttributes du composant hôte. Le contrôle svelte-check reste obligatoire.

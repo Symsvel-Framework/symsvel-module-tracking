@@ -165,12 +165,12 @@
       <Dropdown value={draft.provider} label={t.provider} disabled={saving}
         options={Object.entries(providers).map(([value, label]) => ({ value, label }))}
         onChange={value => { if (value !== draft.provider) draft.identifier = ''; draft.provider = value; }} />
-      <InputField id="tracker-identifier" label={t.identifier} bind:value={draft.identifier} maxlength="255" required disabled={saving} />
-      <InputField id="tracker-name" label={t.name} bind:value={draft.name} maxlength="150" required disabled={saving} />
-      <InputField id="tracker-purpose" label={t.purpose} bind:value={draft.purpose} maxlength="150" required disabled={saving} />
+      <InputField id="tracker-identifier" label={t.identifier} bind:value={draft.identifier} maxlength={255} required disabled={saving} />
+      <InputField id="tracker-name" label={t.name} bind:value={draft.name} maxlength={150} required disabled={saving} />
+      <InputField id="tracker-purpose" label={t.purpose} bind:value={draft.purpose} maxlength={150} required disabled={saving} />
       <label class="field-label" for="tracker-description">{t.description}</label>
       <textarea id="tracker-description" bind:value={draft.description} maxlength="10000" required disabled={saving} rows="4"></textarea>
-      <InputField id="tracker-privacy" label={t.privacy} type="url" bind:value={draft.privacy_url} maxlength="2048" required disabled={saving} />
+      <InputField id="tracker-privacy" label={t.privacy} type="url" bind:value={draft.privacy_url} maxlength={2048} required disabled={saving} />
       <fieldset disabled={saving}>
         <legend>{t.scopes}</legend>
         <label><input type="checkbox" value="app" bind:group={draft.scopes} /> App</label>
