@@ -1,0 +1,24 @@
+# ADR 0001 : catalogue de traceurs et chargement conditionnel
+
+Statut : proposé, chantier ouvert (27/11/2026). Ce document décrit la cible, pas des traceurs déjà intégrés.
+
+## Responsabilités
+Tracking est un module natif facultatif proposé, dépendant de GDPR pour les décisions de consentement. Back détient le catalogue et ses API, BO configure le catalogue via ACLs, App et Front chargent seulement les intégrations autorisées. Le BO n'exécute JAMAIS de traceur tiers ; cette interdiction n'est pas une option Settings. Aucun nouveau système de plugins, aucun métier dans Back/Core. Utiliser les contrats SymSvel de manifeste, de scopes facultatifs, d'ACLs, de Settings, de Languages, de migrations et de documentation.
+
+## Catalogue
+Chaque entrée a un identifiant stable, un fournisseur connu, un identifiant technique validé, un nom, une finalité et une description traduisibles, une politique de confidentialité, un état actif, et une sélection Front et/ou App. Les scopes sont validés côté serveur ; BO et scopes inconnus interdits. Une configuration sans scope actif est refusée. Les choix de consentement portent sur les finalités et configurations identifiables ; une modification substantielle invalide la décision précédente. Aucune donnée secrète n'est publiée dans le catalogue public. Les paramètres internes, droits d'administration et journal ne sont pas exposés.
+
+Privilégier des adaptateurs versionnés dans le code (Google Analytics, Meta Pixel, Matomo, etc., liste initiale à valider) avec identifiants typés ; jamais un champ JavaScript arbitraire depuis le BO. Un développeur peut ajouter un adaptateur selon le futur contrat documenté. Les tags d'un conteneur GTM sont une difficulté particulière : ne pas activer GTM tant que le contrôle effectif des tags internes et de leur consentement n'est pas garanti. L'autorisation du conteneur n'est pas une autorisation globale.
+
+## Runtime SvelteKit
+App et Front sont statiques ; le catalogue est lu au runtime depuis l'API, sans rebuild pour modifier un identifiant ou activer/désactiver une configuration existante. Intégration aux points d'entrée des deux hôtes à concevoir sans écraser les layouts via la synchronisation Tooling. La configuration du scope vient du composant hôte, jamais d'une valeur client utilisée pour contourner les règles. L'API publique renvoie uniquement les entrées actives autorisées pour le scope ; elle ne constitue pas une permission de chargement sans consentement.
+
+GDPR pilote le bandeau (accepter/refuser de visibilité équivalente, choix détaillés, retrait accessible) et le document de confidentialité. Aucun script, iframe, pixel, preconnect ou requête facultative avant autorisation. En cas d'API indisponible, catalogue obsolète, GDPR désactivé, consentement absent/expiré/retiré ou configuration inconnue, ne rien charger. Le retrait nécessite arrêt réel des SDK, suppression des cookies accessibles concernés et si nécessaire rechargement de la page ; retirer seulement la balise script n'est pas suffisant. Tenir compte des navigations SvelteKit et de la CSP de déploiement. Aucun élargissement automatique de CSP, aucun suivi côté BO, aucune transmission de données utilisateur par défaut.
+
+La première brique TrackingPolicy fournit un contrôle pur et défensif : scope App/Front, scopes configurés valides, activation des deux modules et consentement courant. Elle ne réalise aucun chargement réseau et ne remplace ni validation du catalogue ni preuve de consentement.
+
+## Validation avant publication
+- Définir dépendance GDPR et contrat partagé sans cycle, ACLs du BO, persistance portable, API publique minimale et intégration des hôtes.
+- Tests de validation des fournisseurs/scopes, refus BO côté serveur et client, défaut fermé, absence de requêtes avant consentement, retrait et modification de configuration.
+- Tests navigateur avec requêtes réseau contrôlées, sans solliciter les vrais services tiers en CI.
+- CI, CT XT sur les quatre SGBD, installations BO seules et avec interfaces facultatives, documentation dev/admin/user, revue du mainteneur. Pas d'intégration automatique au Setup ou de release fonctionnelle avant validation.
