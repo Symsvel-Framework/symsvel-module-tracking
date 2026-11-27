@@ -1,0 +1,30 @@
+{
+    "manifests": {
+        "symsvel-framework/module-tracking": {
+            "manifest": {
+                "bundles": {
+                    "SymSvel\\Module\\Tracking\\TrackingBundle": [
+                        "all"
+                    ]
+                },
+                "copy-from-recipe": {
+                    "config/": "%CONFIG_DIR%/"
+                }
+            },
+            "files": {
+                "config/routes/tracking.yaml": {
+                    "contents": [
+                        "tracking:",
+                        "    resource:",
+                        "        path: '../../vendor/symsvel-framework/module-tracking/back/src/Controller/'",
+                        "        namespace: SymSvel\\Module\\Tracking\\Controller",
+                        "    type: attribute",
+                        ""
+                    ],
+                    "executable": false
+                }
+            },
+            "ref": "REPLACE_WITH_RECIPE_COMMIT_SHA"
+        }
+    }
+}

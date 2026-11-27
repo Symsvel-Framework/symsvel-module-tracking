@@ -1,0 +1,18 @@
+{
+    "schema": 1,
+    "name": "Tracking",
+    "dependencies": {},
+    "tables": [],
+    "components": {
+        "back": "back",
+        "bo": "bo",
+        "app": "app",
+        "front": "front"
+    },
+    "documentation": {
+        "dev": "docs/dev",
+        "admin": "docs/admin",
+        "user": "docs/user"
+    },
+    "extensions": []
+}
