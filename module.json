@@ -2,7 +2,8 @@
     "schema": 1,
     "name": "Tracking",
     "dependencies": {
-        "acls": "*"
+        "acls": "*",
+        "gdpr": "*"
     },
     "tables": [
         "symsvel_tracking_catalog"

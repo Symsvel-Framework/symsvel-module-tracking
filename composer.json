@@ -7,7 +7,8 @@
         "php": ">=8.4",
         "symfony/framework-bundle": "^8.1",
         "doctrine/dbal": "^4.0",
-        "symsvel-framework/module-acls": "^1.0"
+        "symsvel-framework/module-acls": "^1.0",
+        "symsvel-framework/module-gdpr": "dev-feat/initial-architecture"
     },
     "autoload": {
         "psr-4": {
@@ -41,6 +42,14 @@
         {
             "type": "vcs",
             "url": "https://github.com/Symsvel-Framework/symsvel-module-acls.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/Symsvel-Framework/symsvel-module-gdpr.git"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/Symsvel-Framework/symsvel-module-settings.git"
         }
     ]
 }

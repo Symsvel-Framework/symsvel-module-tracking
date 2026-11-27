@@ -9,6 +9,8 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 use SymSvel\Module\Tracking\Consent\TrackingPolicy;
+use SymSvel\Module\Tracking\Consent\TrackerConsentPurposeProvider;
+use SymSvel\Module\Tracking\Consent\AuthorizedTrackers;
 use SymSvel\Module\Tracking\Catalog\TrackerRepository;
 use SymSvel\Module\Tracking\Catalog\TrackerAdministration;
 use SymSvel\Module\Tracking\Controller\BoTrackingController;
@@ -22,6 +24,8 @@ final class TrackingBundle extends AbstractBundle
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
         $builder->register(TrackingPolicy::class);
+        $builder->register(TrackerConsentPurposeProvider::class)->setAutowired(true)->addTag('symsvel.gdpr.consent_purpose_provider');
+        $builder->register(AuthorizedTrackers::class)->setAutowired(true);
         $builder->register(TrackerRepository::class)->setAutowired(true);
         $builder->register(TrackerAdministration::class)->setAutowired(true);
         $builder->register(BoTrackingController::class)->setAutowired(true)->addTag('controller.service_arguments');

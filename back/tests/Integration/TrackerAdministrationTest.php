@@ -13,6 +13,13 @@ use Symfony\Component\HttpFoundation\Request;
 use SymSvel\Module\Acls\Access\BoAccessDecision;
 use SymSvel\Module\Acls\Access\BoAccessGate;
 use SymSvel\Module\Tracking\Catalog\TrackerAdministration;
+use SymSvel\Module\Tracking\Consent\TrackerConsentPurposeProvider;
+use SymSvel\Module\Tracking\Consent\AuthorizedTrackers;
+use SymSvel\Module\Tracking\Consent\TrackingPolicy;
+use SymSvel\Module\Gdpr\Consent\ConsentCatalogue;
+use SymSvel\Module\Gdpr\Consent\ConsentSelection;
+use SymSvel\Module\Gdpr\Consent\ConsentRepository;
+use SymSvel\Module\Gdpr\Consent\ConsentPolicy;
 use SymSvel\Module\Tracking\Catalog\TrackerRepository;
 use SymSvel\Module\Tracking\Controller\BoTrackingController;
 use SymSvel\Module\Tracking\Provider\GoogleAnalyticsProvider;
@@ -84,6 +91,47 @@ final class TrackerAdministrationTest extends TestCase
             self::assertFalse($this->repository->find($id)?->definition->active);
         }
         self::assertCount(1, $this->repository->all());
+    }
+
+    public function testGdprConsentControlsTheCurrentTrackerRevisionAndScope(): void
+    {
+        require_once dirname(__DIR__, 3).'/vendor/symsvel-framework/module-gdpr/Migration/Version20261127143001.php';
+        $schema = new Schema();
+        $migration = (new \ReflectionClass(\DoctrineMigrations\Version20261127143001::class))->newInstanceWithoutConstructor();
+        $migration->up($schema);
+        foreach ($schema->toSql($this->db->getDatabasePlatform()) as $sql) {
+            $this->db->executeStatement($sql);
+        }
+        $provider = new TrackerConsentPurposeProvider($this->repository);
+        $catalogue = new ConsentCatalogue([$provider]);
+        $consents = new ConsentRepository($this->db);
+        $policy = new ConsentPolicy();
+        $selection = new ConsentSelection($catalogue, $consents, $policy);
+        $authorized = new AuthorizedTrackers($this->repository, $consents, $policy, new TrackingPolicy());
+        $now = new \DateTimeImmutable('2026-11-27T14:00:00Z');
+        $token = str_repeat('a', 64);
+        $created = $this->administration->create($this->payload());
+        $id = $created->definition->id;
+        self::assertSame([], $catalogue->current('front'));
+        $this->administration->update($id, 1, [...$this->payload(), 'scopes' => ['front'], 'active' => true]);
+        self::assertSame(2, $catalogue->current('front')[$id]->revision);
+        self::assertSame([], $catalogue->current('app'));
+        self::assertSame([], iterator_to_array($provider->purposes('bo')));
+        self::assertSame([], $authorized->forVisitor('front', null, true, $now));
+        self::assertSame([], $authorized->forVisitor('front', $token, true, $now));
+        $grant = $selection->save('front', $token, null, [$id => ['revision' => 2, 'granted' => true]], true, 6, $now);
+        self::assertSame([['subject' => $id, 'revision' => 2, 'provider' => 'google-analytics',
+            'identifier' => 'G-ABC123']], $authorized->forVisitor('front', $token, true, $now));
+        self::assertSame([], $authorized->forVisitor('front', $token, false, $now));
+        self::assertSame([], $authorized->forVisitor('app', $token, true, $now));
+        self::assertSame([], $authorized->forVisitor('bo', $token, true, $now));
+        self::assertSame([], $authorized->forVisitor('front', $token, true, $grant->expiresAt));
+        $this->administration->update($id, 2, [...$this->payload(), 'scopes' => ['front'], 'active' => true]);
+        self::assertSame([], $authorized->forVisitor('front', $token, true, $now));
+        $renewed = $selection->save('front', $token, $grant->version, [$id => ['revision' => 3, 'granted' => true]], true, 6, $now);
+        self::assertCount(1, $authorized->forVisitor('front', $token, true, $now));
+        $selection->save('front', $token, $renewed->version, [$id => ['revision' => 3, 'granted' => false]], true, 6, $now);
+        self::assertSame([], $authorized->forVisitor('front', $token, true, $now));
     }
 
     public function testInvalidScopeAndExecutableFieldsNeverReachDatabase(): void
