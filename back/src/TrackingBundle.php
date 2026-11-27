@@ -9,6 +9,10 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 use SymSvel\Module\Tracking\Consent\TrackingPolicy;
+use SymSvel\Module\Tracking\Catalog\TrackerRepository;
+use SymSvel\Module\Tracking\Catalog\TrackerAdministration;
+use SymSvel\Module\Tracking\Controller\BoTrackingController;
+use SymSvel\Module\Tracking\Permission\TrackingPermissionProvider;
 use SymSvel\Module\Tracking\Provider\GoogleAnalyticsProvider;
 use SymSvel\Module\Tracking\Provider\MetaPixelProvider;
 use SymSvel\Module\Tracking\Provider\TrackerProviderRegistry;
@@ -18,6 +22,10 @@ final class TrackingBundle extends AbstractBundle
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
     {
         $builder->register(TrackingPolicy::class);
+        $builder->register(TrackerRepository::class)->setAutowired(true);
+        $builder->register(TrackerAdministration::class)->setAutowired(true);
+        $builder->register(BoTrackingController::class)->setAutowired(true)->addTag('controller.service_arguments');
+        $builder->register(TrackingPermissionProvider::class)->addTag('symsvel.acls.permission_provider');
         foreach ([GoogleAnalyticsProvider::class, MetaPixelProvider::class] as $provider) {
             $builder->register($provider)->addTag('symsvel.tracking.provider');
         }
