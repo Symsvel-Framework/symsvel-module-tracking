@@ -1,8 +1,12 @@
 {
     "schema": 1,
     "name": "Tracking",
-    "dependencies": {},
-    "tables": [],
+    "dependencies": {
+        "acls": "*"
+    },
+    "tables": [
+        "symsvel_tracking_catalog"
+    ],
     "components": {
         "back": "back",
         "bo": "bo",
