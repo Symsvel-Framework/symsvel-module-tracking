@@ -15,3 +15,7 @@ Voir [ADR 0001](../adr/0001-architecture.md) pour le périmètre cible et les d�
 `Consent/TrackingPolicy` refuse toute portée non App/Front, un catalogue de scopes invalide, un module désactivé ou une autorisation absente. Les tests couvrent ces refus. Aucun adaptateur tiers, chargement de script, API ou stockage de consentement n'est encore raccordé.
 
 Validation : composer qa puis CI, intégration et crash-tests XT avant publication fonctionnelle.
+
+## Catalogue interne : première brique
+
+`Catalog/TrackerDefinition` porte les métadonnées validées : identifiant stable, fournisseur, nom, finalité, description, URL HTTPS de confidentialité sans identifiants, scopes App/Front, état et révision positive. Les données de configuration technique sont séparées et devront être validées par les adaptateurs autorisés. `TrackerCatalog` refuse les doublons, filtre de manière déterministe les entrées actives du scope et vérifie la révision courante. Le BO ne peut jamais être un scope de chargement ; les scopes inconnus ne renvoient rien. Une révision ancienne, une entrée inactive ou hors scope n'autorise aucun chargement. Ces classes ne constituent pas une API publique, ne prouvent pas le consentement et ne réalisent aucune requête réseau. La persistance, l'incrément de révision lors de la modification, les traductions, les adaptateurs et le raccordement GDPR restent à implémenter.
