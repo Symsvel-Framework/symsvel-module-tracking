@@ -11,3 +11,40 @@ jobs:
           extensions: pdo_sqlite
       - run: composer install --no-interaction --prefer-dist
       - run: composer qa
+  bo-integration:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: Symsvel-Framework/symsvel-bo
+          ref: dev
+          path: assembled-bo
+          token: ${{ github.token }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: assembled-bo/package-lock.json
+      - name: Assemble module routes like Tooling
+        run: |
+          mkdir -p assembled-bo/src/lib/modules/tracking/routes/tracking assembled-bo/src/routes/tracking
+          cp bo/src/lib/modules/tracking/*.ts assembled-bo/src/lib/modules/tracking/
+          cp bo/src/routes/tracking/+page.svelte assembled-bo/src/lib/modules/tracking/routes/tracking/+page.svelte
+          cp bo/tests/presentation.test.ts assembled-bo/src/lib/modules/tracking/presentation.test.ts
+          cat > assembled-bo/src/routes/tracking/+page.svelte <<'ROUTE'
+          <script lang="ts">
+            import ModulePage from '#lib/modules/tracking/routes/tracking/+page.svelte';
+          </script>
+          <ModulePage />
+          ROUTE
+      - working-directory: assembled-bo
+        run: npm ci --no-audit --no-fund
+      - working-directory: assembled-bo
+        run: |
+          npm run format
+          npm run check
+          npm run lint
+          npm run build
+          npx playwright install --with-deps chromium
+          npm run test:unit -- --run
