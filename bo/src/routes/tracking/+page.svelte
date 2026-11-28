@@ -175,7 +175,7 @@
         <label><input type="checkbox" value="app" bind:group={draft.scopes} /> App</label>
         <label><input type="checkbox" value="front" bind:group={draft.scopes} /> Front</label>
       </fieldset>
-      <small>{editing ? t.revisionInfo : t.inactiveInfo}</small>
+      <small>{editing ? t.revisionInfo : t.creationInfo}</small>
       <div class="actions">
         <Button variant="secondary" onclick={() => showForm = false} disabled={saving}>{t.cancel}</Button>
         <Button type="submit" variant="success" loading={saving} disabled={!draft.provider || !draft.scopes.length}>{t.save}</Button>

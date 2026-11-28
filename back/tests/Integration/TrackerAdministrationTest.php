@@ -86,7 +86,8 @@ final class TrackerAdministrationTest extends TestCase
         $created = $this->administration->create($this->payload());
         $id = $created->definition->id;
         self::assertMatchesRegularExpression('/^tracker-[a-f0-9]{32}$/D', $id);
-        self::assertFalse($created->definition->active);
+        self::assertTrue($created->definition->active);
+        self::assertTrue($this->repository->find($id)?->definition->active);
         self::assertSame(1, $created->definition->revision);
         self::assertSame('G-ABC123', $this->repository->find($id)?->identifier);
 
@@ -128,7 +129,10 @@ final class TrackerAdministrationTest extends TestCase
         $token = str_repeat('a', 64);
         $created = $this->administration->create($this->payload());
         $id = $created->definition->id;
-        self::assertSame([], $catalogue->current('front'));
+        self::assertSame(1, $catalogue->current('front')[$id]->revision);
+        self::assertSame(1, $catalogue->current('app')[$id]->revision);
+        self::assertSame([], $authorized->forVisitor('front', null, true, $now));
+        self::assertSame([], $authorized->forVisitor('front', $token, true, $now));
         $this->administration->update($id, 1, [...$this->payload(), 'scopes' => ['front'], 'active' => true]);
         self::assertSame(2, $catalogue->current('front')[$id]->revision);
         self::assertSame([], $catalogue->current('app'));
@@ -261,7 +265,7 @@ final class TrackerAdministrationTest extends TestCase
         self::assertSame(201, $response->getStatusCode());
         $data = json_decode((string) $response->getContent(), true, 8, JSON_THROW_ON_ERROR)['data'];
         $id = $data['id'];
-        self::assertFalse($data['active']);
+        self::assertTrue($data['active']);
         self::assertSame(403, $readOnly->update($this->request('PUT', [...$this->payload(), 'revision' => 1, 'active' => true]), $id)->getStatusCode());
         $list = $readOnly->list(Request::create('/apibo/tracking'));
         self::assertSame(200, $list->getStatusCode());

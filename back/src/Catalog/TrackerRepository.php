@@ -30,11 +30,11 @@ final readonly class TrackerRepository
         return $row === false ? null : $this->hydrate($row);
     }
 
-    /** Creation always starts inactive. The ID is never recycled. */
+    /** Creation starts active in the validated catalogue. The ID is never recycled. */
     public function create(TrackerConfiguration $configuration): void
     {
-        if ($configuration->definition->active || $configuration->definition->revision !== 1) {
-            throw new \InvalidArgumentException('A new tracker must be inactive at revision 1.');
+        if (!$configuration->definition->active || $configuration->definition->revision !== 1) {
+            throw new \InvalidArgumentException('A new tracker must be active at revision 1.');
         }
 
         $values = ['id' => $configuration->definition->id, ...$this->values($configuration)];

@@ -15,7 +15,7 @@ final readonly class TrackerAdministration
 
     public function create(array $input): TrackerConfiguration
     {
-        $configuration = $this->configuration('tracker-'.bin2hex(random_bytes(16)), 1, $input, false);
+        $configuration = $this->configuration('tracker-'.bin2hex(random_bytes(16)), 1, $input, true);
         $this->repository->create($configuration);
 
         return $configuration;
