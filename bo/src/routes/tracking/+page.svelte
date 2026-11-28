@@ -14,7 +14,7 @@
   import { ApiError } from '../../../../api/client';
   import { boApi } from '../../../../api/session';
   import { uiLanguage } from '../../../../api/locales';
-  import { trackerInput, trackingCopy, filterTrackers, type TrackerInput, type BoTracker, type BoTrackingResponse } from '../../presentation';
+  import { trackerInput, trackerPreset, trackingCopy, filterTrackers, type TrackerInput, type BoTracker, type BoTrackingResponse } from '../../presentation';
 
   const brandName = getProjectBrand();
   let rows = $state<BoTracker[]>([]);
@@ -84,8 +84,7 @@
   function open(row?: BoTracker): void {
     if (!canManage || saving || loading) return;
     editing = row ?? null;
-    draft = trackerInput(row);
-    if (!row) draft.provider = Object.keys(providers)[0] ?? '';
+    draft = row ? trackerInput(row) : trackerPreset(Object.keys(providers)[0] ?? '', locale);
     formError = '';
     showForm = true;
   }
@@ -164,7 +163,7 @@
       <span class="field-label">{t.provider}</span>
       <Dropdown value={draft.provider} label={t.provider} disabled={saving}
         options={Object.entries(providers).map(([value, label]) => ({ value, label }))}
-        onChange={value => { if (value !== draft.provider) draft.identifier = ''; draft.provider = value; }} />
+        onChange={value => { if (value !== draft.provider) draft = trackerPreset(value, locale, draft.scopes); }} />
       <InputField id="tracker-identifier" label={t.identifier} bind:value={draft.identifier} maxlength={255} required disabled={saving} />
       <InputField id="tracker-name" label={t.name} bind:value={draft.name} maxlength={150} required disabled={saving} />
       <InputField id="tracker-purpose" label={t.purpose} bind:value={draft.purpose} maxlength={150} required disabled={saving} />

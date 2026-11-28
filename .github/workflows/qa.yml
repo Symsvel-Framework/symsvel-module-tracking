@@ -32,6 +32,8 @@ jobs:
           cp bo/src/lib/modules/tracking/*.ts assembled-bo/src/lib/modules/tracking/
           cp bo/src/routes/tracking/+page.svelte assembled-bo/src/lib/modules/tracking/routes/tracking/+page.svelte
           cp bo/tests/presentation.test.ts assembled-bo/src/lib/modules/tracking/presentation.test.ts
+          mkdir -p assembled-bo/src/lib/translations/tracking
+          cp bo/src/lib/translations/*.ts assembled-bo/src/lib/translations/tracking/
           cat > assembled-bo/src/routes/tracking/+page.svelte <<'ROUTE'
           <script lang="ts">
             import ModulePage from '#lib/modules/tracking/routes/tracking/+page.svelte';

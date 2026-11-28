@@ -92,6 +92,35 @@ export function trackerInput(row?: TrackerInput): TrackerInput {
   };
 }
 
+const presetCopy = {
+  "fr": {
+    "gaName": "Google Analytics 4",
+    "gaPurpose": "Mesure d'audience",
+    "gaDescription": "Mesure de fréquentation et statistiques de navigation afin d'améliorer le site ou l'application.",
+    "metaName": "Meta Pixel",
+    "metaPurpose": "Mesure publicitaire",
+    "metaDescription": "Mesure des interactions et des conversions liées aux campagnes publicitaires Meta."
+  },
+  "en": {
+    "gaName": "Google Analytics 4",
+    "gaPurpose": "Audience measurement",
+    "gaDescription": "Traffic and navigation statistics to improve the website or application.",
+    "metaName": "Meta Pixel",
+    "metaPurpose": "Advertising measurement",
+    "metaDescription": "Measurement of interactions and conversions related to Meta advertising campaigns."
+  }
+};
+
+/** Editable suggestions only; selecting a provider never creates or activates a tracker. */
+export function trackerPreset(provider: string, locale: string | null, scopes: TrackerScope[] = []): TrackerInput {
+  const source = locale?.toLowerCase().startsWith('en') ? presetCopy.en : presetCopy.fr;
+  const label = (key: keyof typeof presetCopy.fr) => generatedTranslation(locale, 'bo.tracking.' + key) ?? source[key];
+  const draft = { ...trackerInput(), provider, scopes: [...scopes] };
+  if (provider === 'google-analytics') return { ...draft, name: label('gaName'), purpose: label('gaPurpose'), description: label('gaDescription'), privacy_url: 'https://policies.google.com/privacy' };
+  if (provider === 'meta-pixel') return { ...draft, name: label('metaName'), purpose: label('metaPurpose'), description: label('metaDescription'), privacy_url: 'https://www.facebook.com/privacy/policy/' };
+  return draft;
+}
+
 export function filterTrackers(rows: BoTracker[], search: string, sortKey: string | null, descending: boolean, locale: string): BoTracker[] {
   const term = search.trim().toLocaleLowerCase();
   const key = sortKey === 'provider' || sortKey === 'purpose' ? sortKey : 'name';
