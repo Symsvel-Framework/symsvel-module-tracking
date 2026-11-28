@@ -13,3 +13,5 @@ Lors de l'ajout, choisir Google Analytics 4 ou Meta Pixel : le formulaire propos
 ## GA4 : préparation du compte fournisseur
 
 Pour le futur suivi de navigation géré par SymSvel, désactiver les pageviews automatiques liés aux changements d'historique dans les mesures améliorées GA4 et vérifier les destinations liées à la balise (notamment publicitaires). Le module ne contrôle pas les paramètres du compte Google ; vérifier également les données remontées et l'absence d'identifiants personnels avant activation. L'adaptateur GA4 est introduit côté code mais pas encore monté dans les interfaces.
+
+Meta Pixel : désactiver côté fournisseur le matching avancé automatique et les événements automatiques non souhaités. Le SDK n'est pas encore monté. Ne pas installer sur des pages contenant des informations personnelles, des URL sensibles ou des traitements incompatibles avec les conditions du fournisseur ; le contrôle des routes et des données réseau doit précéder l'activation.
