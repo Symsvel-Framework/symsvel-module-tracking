@@ -303,7 +303,8 @@ test('the real GDPR privacy page is never tracked', async ({ page, context }) =>
   await page.getByRole('link', { name: /Données personnelles et cookies|Personal data and cookies/ }).click();
   await expect(page).toHaveURL(/\/privacy\/?$/);
   await expect(page.getByRole('heading', { name: /Données personnelles et cookies|Personal data and cookies/ })).toBeVisible();
-  await expect(preferences(page)).toBeVisible();
+  await expect(page.getByRole('checkbox').first()).toBeVisible();
+  await expect(page.locator('.consent-panel.floating')).toHaveCount(0);
   expect((await commands(page)).loadedGa).toBe(false);
   expect((await commands(page)).loadedMeta).toBe(false);
   expect(f.requests).toHaveLength(2);

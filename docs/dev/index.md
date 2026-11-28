@@ -101,3 +101,5 @@ GDPR est désormais intégré sur dev ; le Composer et le checkout de QA Trackin
 ## Activation à la création (28/11/2026)
 
 Le POST BO valide tous les champs et crée le traceur actif à la révision 1 ; le client ne fournit toujours pas le champ active. La finalité apparaît immédiatement dans le catalogue GDPR des scopes choisis, sans autorisation de chargement tant qu'aucun consentement courant n'a été donné. Les routes autorisées et les contrôles GDPR restent inchangés. Aucune migration ni réactivation des entrées existantes : le défaut SQL défensif reste false, le dépôt écrit explicitement l'état validé. Le nouveau libellé `creationInfo` remplace l'ancien `inactiveInfo`. Tests de persistance, API BO, projection immédiate et absence de grant sans consentement.
+
+Le CT navigateur de la page `/privacy` vérifie désormais le formulaire GDPR intégré et non le bouton de préférences flottant. La navigation depuis une page suivie garde l'exigence d'un nouveau document et aucun SDK sur la page de confidentialité. Aucun changement du moteur Tracking.
