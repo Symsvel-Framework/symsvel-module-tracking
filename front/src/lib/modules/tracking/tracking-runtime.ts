@@ -36,7 +36,7 @@ export class TrackingRuntime {
     const unchanged = this.permit !== null && next !== null
       && this.permit.version === next.version && this.permit.credential === next.credential
       && this.permit.expiresAt === next.expiresAt;
-    if (unchanged) return;
+    if (unchanged) { await this.revalidate(); return; }
     this.invalidate();
     this.permit = next === null ? null : { ...next };
     if (this.permit !== null && !this.unsafe) await this.revalidate();

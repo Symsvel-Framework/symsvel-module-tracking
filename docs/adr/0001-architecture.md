@@ -50,3 +50,7 @@ Meta Pixel : consentement global, trackSingle par ID, aucun matching avancé ni 
 ## Garde de navigation publique
 
 Proposition conservatrice : les SDK ne sont admissibles que sur des routes statiques publiques explicitement auditées, sans paramètres d'URL, Front `/` par défaut, App aucune par défaut. Les routes sensibles natives sont refusées. Une navigation vers une route non admissible après chargement impose de quitter le document, pas seulement de supprimer le script. Cette limite est motivée par les privilèges DOM des SDK tiers ; elle reste à valider avec le mainteneur avant publication.
+
+## Montage du consommateur (28/11/2026)
+
+La factory optionnelle Tracking est détenue par Tracking ; elle implémente le contrat GDPR sans modifier les layouts. Un document ayant tenté de démarrer un SDK impose une navigation complète pour toute transition et ne redémarre pas après changement de permit. Le signal selectionCommitted autorise un reset après confirmation du choix ; null seul ne doit jamais interrompre une écriture GDPR. En l'absence de confirmation (expiration, autre onglet ou erreur), le runtime reste fermé jusqu'à une nouvelle navigation ou un choix confirmé. Le cache arrière/avant fait l'objet d'un arrêt pagehide et d'un reset pageshow si un SDK a été tenté. Tests unitaires assemblés, tests réseau navigateur et CT encore requis ; aucune promotion stable.
