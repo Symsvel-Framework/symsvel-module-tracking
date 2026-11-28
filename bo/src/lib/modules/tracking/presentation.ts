@@ -38,7 +38,7 @@ const copy = {
     "session": "Session expirée.",
     "failure": "Impossible de traiter les traceurs.",
     "scopeRequired": "Choisir au moins une interface.",
-    "inactiveInfo": "Un nouveau traceur est toujours créé inactif.",
+    "creationInfo": "Le traceur sera actif dès sa création, mais aucun chargement sans consentement et route autorisée.",
     "revisionInfo": "Toute modification renouvelle la révision et invalide les anciens consentements.",
     "unavailable": "Le chargement dépend d’un consentement GDPR valide et de routes publiques explicitement autorisées."
   },
@@ -72,7 +72,7 @@ const copy = {
     "session": "Session expired.",
     "failure": "Cannot process trackers.",
     "scopeRequired": "Select at least one interface.",
-    "inactiveInfo": "A new tracker is always created inactive.",
+    "creationInfo": "The tracker is active on creation, but loads only with consent and an allowed route.",
     "revisionInfo": "Every change creates a new revision and invalidates previous consents.",
     "unavailable": "Loading requires valid GDPR consent and explicitly allowed public routes."
   }
