@@ -92,6 +92,47 @@ describe('Tracking GDPR consumer', () => {
     f.document.dispatchEvent(new Event('visibilitychange'));
     await vi.waitFor(() => expect(f.scripts).toHaveLength(2));
   });
+  it('does not reuse an unfinished permit after BFCache restoration', async () => {
+    const f = fixture();
+    let release!: (value: Response) => void;
+    f.fetcher.mockImplementationOnce(() => new Promise(resolve => { release = resolve; }));
+    f.consumer.setPermit(permit);
+    f.browser.dispatchEvent(new Event('pagehide'));
+    f.browser.dispatchEvent(Object.assign(new Event('pageshow'), { persisted: true }));
+    release(response([ga, meta]));
+    await settle();
+    expect(f.fetcher).toHaveBeenCalledOnce();
+    expect(f.scripts).toHaveLength(0);
+    f.consumer.setPermit(permit);
+    await vi.waitFor(() => expect(f.scripts).toHaveLength(2));
+  });
+  it('permanently retires a touched GA4 document after a projection error', async () => {
+    const f = fixture();
+    f.fetcher.mockResolvedValueOnce(response([ga]));
+    f.consumer.setPermit(permit);
+    await vi.waitFor(() => expect(f.scripts).toHaveLength(1));
+    f.scripts[0].onload?.();
+    f.fetcher.mockRejectedValueOnce(new Error('offline'));
+    f.document.dispatchEvent(new Event('visibilitychange'));
+    await vi.waitFor(() => expect(f.browser).toHaveProperty('ga-disable-G-ABC', true));
+    f.document.dispatchEvent(new Event('visibilitychange'));
+    await settle();
+    expect(f.fetcher).toHaveBeenCalledTimes(2);
+    expect(f.consumer.requiresDocumentNavigation()).toBe(true);
+  });
+  it('retires a touched document when the authorized configuration set changes', async () => {
+    const f = fixture();
+    f.fetcher.mockResolvedValueOnce(response([ga]));
+    f.consumer.setPermit(permit);
+    await vi.waitFor(() => expect(f.scripts).toHaveLength(1));
+    f.scripts[0].onload?.();
+    f.document.dispatchEvent(new Event('visibilitychange'));
+    await vi.waitFor(() => expect(f.browser).toHaveProperty('ga-disable-G-ABC', true));
+    expect(f.scripts).toHaveLength(1);
+    f.document.dispatchEvent(new Event('visibilitychange'));
+    await settle();
+    expect(f.fetcher).toHaveBeenCalledTimes(2);
+  });
   it('retires the document at pagehide and reloads a cached document on restoration', async () => {
     const f = fixture();
     f.consumer.setPermit(permit);

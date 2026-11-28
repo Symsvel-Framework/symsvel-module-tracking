@@ -26,7 +26,8 @@ export class TrackingRuntime {
   constructor(
     private readonly api: Pick<AuthorizedTrackingApi, 'authorized'>,
     private readonly adapters: AdapterMap,
-    private readonly onStopFailure: () => void = () => {}
+    private readonly onStopFailure: () => void = () => {},
+    private readonly onProjectionInvalidated: () => void = () => {}
   ) {}
 
   /** A null or changed permit stops existing handles synchronously, before any await. */
@@ -59,12 +60,19 @@ export class TrackingRuntime {
     try {
       const configurations = await this.api.authorized(permit, controller.signal);
       if (!current()) {
-        if (this.generation === generation) this.invalidate();
+        if (this.generation === generation) { this.invalidate(); this.notifyProjectionInvalidated(); }
         return;
       }
       if (configurations.some(t => !this.adapters[t.provider])) throw new Error('Missing native tracker adapter.');
       const desired = new Set(configurations.map(signature));
       if (desired.size !== configurations.length) throw new Error('Duplicate tracker configuration.');
+      // A document-level host may retire the entire document instead of
+      // reconciling a changed projection after any SDK has been executed.
+      if (this.active.size > 0 && (desired.size !== this.active.size
+        || [...this.active.keys()].some(key => !desired.has(key)))) {
+        this.notifyProjectionInvalidated();
+        if (!current()) return;
+      }
       for (const [key, handle] of this.active) {
         if (!desired.has(key)) {
           this.active.delete(key);
@@ -88,7 +96,7 @@ export class TrackingRuntime {
         this.active.set(key, handle);
       }
     } catch {
-      if (this.generation === generation) this.invalidate();
+      if (this.generation === generation) { this.invalidate(); this.notifyProjectionInvalidated(); }
     } finally {
       if (this.pending === controller) this.pending = null;
     }
@@ -108,6 +116,10 @@ export class TrackingRuntime {
     const handles = [...this.active.values()];
     this.active.clear();
     for (const handle of handles) this.stop(handle);
+  }
+
+  private notifyProjectionInvalidated(): void {
+    try { this.onProjectionInvalidated(); } catch { /* fail closed through the current runtime */ this.invalidate(); }
   }
 
   private stop(handle: TrackerHandle): void {

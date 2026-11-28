@@ -37,7 +37,9 @@ export class TrackingConsentConsumer implements ConsentConsumer {
     this.runtime = new TrackingRuntime(api, {
       'google-analytics': guarded(this.google),
       'meta-pixel': guarded(this.meta)
-    }, () => { this.retired = true; });
+    }, () => { this.retired = true; }, () => {
+      if (this.touched) this.retire();
+    });
     this.interval = browser.setInterval(this.refresh, 60000);
     document.addEventListener('visibilitychange', this.refresh);
     browser.addEventListener('pagehide', this.pageHide);
@@ -139,8 +141,10 @@ export class TrackingConsentConsumer implements ConsentConsumer {
   };
 
   private readonly pageHide = (): void => {
+    // BFCache must not reuse a permit captured before the document was hidden.
+    // GDPR will republish only after re-reading the current server state.
+    this.setPermit(null);
     if (this.touched) this.retire();
-    else void this.runtime.setPermit(null);
   };
 
   private readonly pageShow = (event: PageTransitionEvent): void => {

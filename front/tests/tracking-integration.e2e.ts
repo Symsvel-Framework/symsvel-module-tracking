@@ -20,7 +20,7 @@ test.afterEach(async ({ page }, info) => {
     console.log('[tracking browser state]', JSON.stringify(await page.evaluate(scope => ({
       path: location.pathname,
       credentialPresent: localStorage.getItem('symsvel.gdpr.' + scope) !== null,
-      blocked: localStorage.getItem('symsvel.gdpr.' + scope + '.blocked') !== null,
+      blocked: Object.keys(localStorage).some(key => key.startsWith('symsvel.gdpr.' + scope + '.blocked')),
       gaPresent: 'gtag' in window, metaPresent: 'fbq' in window,
       scripts: Array.from(document.scripts).map(script => script.src).filter(src => src.includes('googletagmanager') || src.includes('facebook.net'))
     }), scope)));
@@ -264,4 +264,33 @@ test('a refusal in another tab stops active providers in the first tab', async (
   expect((await commands(page)).meta.at(-1)).toEqual(['consent', 'revoke']);
   await expect(preferences(other)).toBeVisible();
   expect(f.requests).toHaveLength(4);
+});
+
+test('a concurrent consent intent prevents reactivation after an older successful PUT', async ({ page, context }) => {
+  const f = await fixture(context);
+  await page.goto(publicUrl);
+  await accept(page).click();
+  await both(page);
+  const other = await context.newPage();
+  await other.goto(publicUrl);
+  await both(other);
+  await preferences(page).click();
+  const held = gate();
+  f.holdWrite(held.promise);
+  await accept(page).click();
+  try {
+    await expect.poll(f.writes).toBe(2);
+    await expect(refuse(other)).toBeVisible();
+    await expect.poll(async () => (await commands(other)).disabled).toBe(true);
+    await refuse(other).click();
+    await expect(other.getByRole('alert')).toBeVisible();
+    expect(f.writes()).toBe(2);
+  } finally { f.holdWrite(null); held.release(); }
+  await expect(page.getByRole('alert')).toBeVisible();
+  expect((await commands(page)).disabled).toBe(true);
+  expect((await commands(other)).disabled).toBe(true);
+  expect(f.requests).toHaveLength(4);
+  const blockers = await other.evaluate(scope =>
+    Object.keys(localStorage).filter(key => key.startsWith('symsvel.gdpr.' + scope + '.blocked')), scope);
+  expect(blockers.length).toBeGreaterThan(0);
 });
