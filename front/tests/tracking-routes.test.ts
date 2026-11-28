@@ -16,7 +16,7 @@ describe('public tracking route gate', () => {
     expect(gate.allows('/products/[id]', new URL('https://app.example.test/products/42'))).toBe(false);
   });
   it('rejects known private and authentication routes and invalid syntax', () => {
-    for (const route of ['/login','/dashboard','/account/orders','/reset-password','/products/[id]','//other.example.test','/about?x=1','/profile/edit']) {
+    for (const route of ['/login','/dashboard','/account/orders','/reset-password','/products/[id]','//other.example.test','/about?x=1','/profile/edit','/privacy','/cookies','/privacy/requests']) {
       expect(() => new TrackingRoutes('front', route)).toThrow();
     }
   });

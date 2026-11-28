@@ -93,3 +93,5 @@ Stabilisation du test de changement de choix : attendre explicitement la nouvell
 ## Défaut fermé après restauration et revalidation
 
 Le consommateur oublie son permit dès pagehide ; une restauration sans SDK doit attendre la relecture GDPR avant tout nouvel appel. Si une projection échoue ou si son ensemble de configurations change après qu'un SDK a été tenté, le consommateur retire définitivement le document, arrête ses handles et attend une navigation ou un choix explicitement confirmé. Une première erreur avant toute tentative SDK peut être retentée. Les tests unitaires couvrent les trois cas ; un scénario Chromium supplémentaire par scope exerce une intention de retrait concurrente d'un PUT plus ancien, avec le nouveau verrou GDPR. Les diagnostics détectent les marqueurs de blocage distincts. Aucun assouplissement du filtrage des routes.
+
+La garde des routes interdit aussi les segments privacy et cookies, même ajoutés explicitement à l'allowlist. Les messages BO et la documentation de configuration reflètent désormais le montage effectif sous consentement, sans promettre un arrêt instantané de code tiers ni une validation réelle des fournisseurs.

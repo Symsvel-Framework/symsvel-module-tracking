@@ -58,3 +58,5 @@ La factory optionnelle Tracking est détenue par Tracking ; elle implémente le 
 La CI Tracking inclut désormais une suite Playwright dans les hôtes App et Front assemblés, avec routes de test explicitement autorisées ou non, APIs simulées et interception stricte de toutes les requêtes externes. Aucun appel réel à GA4 ou Meta en CI. Les garanties effectives des SDK fournisseurs et les CT demeurent des conditions distinctes de validation.
 
 Lors de pagehide, même un document n'ayant pas encore lancé de SDK oublie son permit. GDPR doit le republier après relecture serveur lors d'une restauration. Après une tentative SDK, toute erreur de projection ou changement de l'ensemble autorisé retire définitivement le document et arrête les handles ; une première erreur avant SDK peut être retentée. La suite Chromium vérifie également une intention concurrente avec les marqueurs GDPR distincts.
+
+Les chemins privacy et cookies sont exclus de la garde publique, y compris lorsqu'ils sont proposés par une configuration manuelle. Le texte BO reflète la condition effective GDPR + route autorisée.

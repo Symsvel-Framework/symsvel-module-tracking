@@ -40,7 +40,7 @@ const copy = {
     "scopeRequired": "Choisir au moins une interface.",
     "inactiveInfo": "Un nouveau traceur est toujours créé inactif.",
     "revisionInfo": "Toute modification renouvelle la révision et invalide les anciens consentements.",
-    "unavailable": "Le chargement des traceurs n'est pas encore raccordé au consentement GDPR."
+    "unavailable": "Le chargement dépend d’un consentement GDPR valide et de routes publiques explicitement autorisées."
   },
   "en": {
     "title": "Trackers",
@@ -74,7 +74,7 @@ const copy = {
     "scopeRequired": "Select at least one interface.",
     "inactiveInfo": "A new tracker is always created inactive.",
     "revisionInfo": "Every change creates a new revision and invalidates previous consents.",
-    "unavailable": "Tracker loading is not yet connected to GDPR consent."
+    "unavailable": "Loading requires valid GDPR consent and explicitly allowed public routes."
   }
 };
 export type TrackingCopy = typeof copy.fr;

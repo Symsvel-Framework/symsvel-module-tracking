@@ -1,6 +1,6 @@
 import type { Scope } from '../gdpr/consent-client';
 
-const forbidden = new Set(['login','register','activate','forgot-password','reset-password','verify-email','verify-email-change','two-factor','profile','dashboard','account','checkout','payment','payments','admin']);
+const forbidden = new Set(['login','register','activate','forgot-password','reset-password','verify-email','verify-email-change','two-factor','profile','dashboard','account','checkout','payment','payments','admin','privacy','cookies']);
 const routePattern = /^\/(?:[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*)?$/;
 
 /**
