@@ -38,3 +38,7 @@ Le serveur ne publie les paramètres techniques des traceurs que via POST /apiop
 ## Client de projection
 
 Le client App/Front n'appelle le Back qu'avec un ConsentPermit courant. La version et l'expiration retournées doivent être identiques, les configurations connues et valides. Les doublons et fournisseurs sans adaptateur sont refusés. Une annulation de requête ou une expiration invalide la réponse ; les erreurs ne permettent pas de réutiliser une autorisation antérieure. Aucun SDK n'est encore chargé, le futur orchestrateur doit invalider le signal à chaque changement et arrêter effectivement les fournisseurs déjà actifs.
+
+## Orchestration du cycle de vie
+
+Un runtime par interface App/Front réconcilie les configurations autorisées avec les adaptateurs natifs. Un changement de permit invalide les requêtes et arrête synchroniquement tous les handles ; une revalidation identique ne duplique pas les SDK. En cas de réponse obsolète, d'adaptateur absent ou d'erreur, aucune nouvelle activation ; les handles sont arrêtés. Un échec d'arrêt interdit toute réactivation de l'instance et signale la nécessité d'un reset sûr du document. Les tests simulent les SDK ; leur comportement réseau réel et l'intégration hôte restent à valider. Aucun SDK tiers n'est ajouté dans cette étape.

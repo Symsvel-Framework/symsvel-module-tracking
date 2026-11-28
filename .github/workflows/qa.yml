@@ -76,9 +76,10 @@ jobs:
       - name: Assemble authorized projection clients
         run: |
           cmp app/src/lib/modules/tracking/authorized-tracking.ts front/src/lib/modules/tracking/authorized-tracking.ts
+          cmp app/src/lib/modules/tracking/tracking-runtime.ts front/src/lib/modules/tracking/tracking-runtime.ts
           mkdir -p assembled/src/lib/modules/tracking assembled/src/lib/modules/gdpr
           cp "${{ matrix.scope }}/src/lib/modules/tracking/"*.ts assembled/src/lib/modules/tracking/
-          cp "${{ matrix.scope }}/tests/authorized-tracking.test.ts" assembled/src/lib/modules/tracking/
+          cp "${{ matrix.scope }}/tests/authorized-tracking.test.ts" "${{ matrix.scope }}/tests/tracking-runtime.test.ts" assembled/src/lib/modules/tracking/
           cp "gdpr/${{ matrix.scope }}/src/lib/modules/gdpr/consent-client.ts" assembled/src/lib/modules/gdpr/
       - working-directory: assembled
         run: npm ci --no-audit --no-fund
@@ -88,4 +89,4 @@ jobs:
           npm run check
           npm run lint
           npm run build
-          npm run test:unit -- --run --project server src/lib/modules/tracking/authorized-tracking.test.ts
+          npm run test:unit -- --run --project server src/lib/modules/tracking/authorized-tracking.test.ts src/lib/modules/tracking/tracking-runtime.test.ts
