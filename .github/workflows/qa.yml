@@ -111,7 +111,6 @@ jobs:
           <h1>Private fixture</h1>
           <a href={resolve('/tracking-public')}>Public fixture</a>
           ROUTE
-          python3 tests/instrument-browser.py assembled
           if [ "${{ matrix.scope }}" = app ]; then
             # Fixture pages need no login; do not change production auth routes.
             sed -i "s/return \['\/'/return ['\/tracking-public', '\/tracking-private', '\/'/" assembled/src/lib/app/public-routes.ts

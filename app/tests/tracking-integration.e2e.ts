@@ -11,7 +11,7 @@ const credential = 'c'.repeat(64) + '.' + 'd'.repeat(64);
 test.beforeEach(({ page }) => {
   page.on('pageerror', error => console.log('[browser error]', error.message));
   page.on('console', message => {
-    if (message.type() === 'error' || message.type() === 'warning' || message.text().startsWith('[tracking-ci]')) console.log('[browser]', message.text());
+    if (message.type() === 'error' || message.type() === 'warning') console.log('[browser]', message.text());
   });
 });
 test.afterEach(async ({ page }, info) => {
