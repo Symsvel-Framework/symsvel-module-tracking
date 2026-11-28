@@ -152,5 +152,5 @@ export class TrackingConsentConsumer implements ConsentConsumer {
 
 /** Exact optional entry consumed by the GDPR runtime; safe to import during SSR. */
 export function createConsentConsumer(scope: Scope, apiOrigin: string): ConsentConsumer {
-  return new TrackingConsentConsumer(scope, apiOrigin, window, document, import.meta.env.PUBLIC_TRACKING_ROUTES);
+  return new TrackingConsentConsumer(scope, apiOrigin, window, document, import.meta.env.PUBLIC_TRACKING_ROUTES, window.fetch.bind(window));
 }

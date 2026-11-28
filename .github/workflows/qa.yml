@@ -128,4 +128,10 @@ jobs:
         env:
           PUBLIC_API_URL: http://localhost:4173
           PUBLIC_TRACKING_ROUTES: /tracking-public
-        run: npx playwright test src/routes/tracking-integration.e2e.ts
+        run: npx playwright test src/routes/tracking-integration.e2e.ts --trace retain-on-failure
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: tracking-browser-${{ matrix.scope }}
+          path: assembled/test-results/
+          if-no-files-found: ignore

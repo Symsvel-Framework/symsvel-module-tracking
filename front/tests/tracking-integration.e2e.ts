@@ -8,6 +8,25 @@ const ga = { subject: 'tracker-' + 'a'.repeat(32), revision: 1, provider: 'googl
 const meta = { subject: 'tracker-' + 'b'.repeat(32), revision: 1, provider: 'meta-pixel', identifier: '123' };
 const trackers = [ga, meta];
 const credential = 'c'.repeat(64) + '.' + 'd'.repeat(64);
+test.beforeEach(({ page }) => {
+  page.on('pageerror', error => console.log('[browser error]', error.message));
+  page.on('console', message => {
+    if (message.type() === 'error' || message.type() === 'warning') console.log('[browser]', message.text());
+  });
+});
+test.afterEach(async ({ page }, info) => {
+  if (info.status === info.expectedStatus || page.isClosed()) return;
+  try {
+    console.log('[tracking browser state]', JSON.stringify(await page.evaluate(scope => ({
+      path: location.pathname,
+      credentialPresent: localStorage.getItem('symsvel.gdpr.' + scope) !== null,
+      blocked: localStorage.getItem('symsvel.gdpr.' + scope + '.blocked') !== null,
+      gaPresent: 'gtag' in window, metaPresent: 'fbq' in window,
+      scripts: Array.from(document.scripts).map(script => script.src).filter(src => src.includes('googletagmanager') || src.includes('facebook.net'))
+    }), scope)));
+  } catch { /* the document may be navigating */ }
+});
+
 const button = (page: Page, name: RegExp) => page.getByRole('button', { name });
 const accept = (page: Page) => button(page, /Accept all|Tout accepter/);
 const refuse = (page: Page) => button(page, /Refuse all|Tout refuser/);
@@ -122,6 +141,9 @@ test('individual consent loads only GA4; both SDKs can be granted in a new docum
   await button(page, /Customize|Personnaliser/).click();
   await page.getByRole('checkbox', { name: 'GA4 fixture' }).check();
   await button(page, /Save my choices|Enregistrer/).click();
+  await expect.poll(f.writes).toBe(1);
+  await expect(preferences(page)).toBeVisible();
+  await expect.poll(f.projections).toBeGreaterThan(0);
   await expect.poll(async () => (await commands(page)).loadedGa).toBe(true);
   expect(f.requests).toHaveLength(1);
   expect(f.requests[0]).toContain('gtag/js');
@@ -183,6 +205,8 @@ test('an in-flight projection cannot start a provider after SPA navigation', asy
   await page.goto(publicUrl);
   await accept(page).click();
   try {
+    await expect.poll(f.writes).toBe(1);
+    await expect(preferences(page)).toBeVisible();
     await expect.poll(f.projections).toBe(1);
     await page.getByRole('link', { name: 'Private fixture' }).click();
     await expect(page).toHaveURL(privateUrl);
