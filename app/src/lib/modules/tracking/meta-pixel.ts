@@ -1,5 +1,6 @@
 import type { AuthorizedTracker } from './authorized-tracking';
 import type { TrackerAdapter, TrackerHandle } from './tracking-runtime';
+import { expireTrackerCookies } from './tracker-cookies';
 
 type PixelCommand = ((...args: unknown[]) => void) & {
   queue: unknown[][]; callMethod?: (...args: unknown[]) => void;
@@ -108,7 +109,11 @@ export class MetaPixelAdapter implements TrackerAdapter {
   private revoke(): void {
     this.retired = true;
     this.active.clear();
-    this.pixel?.('consent', 'revoke');
+    try {
+      this.pixel?.('consent', 'revoke');
+    } finally {
+      expireTrackerCookies(this.document, this.browser.location.hostname, ['_fbp', '_fbc'], true);
+    }
     if (this.script && !this.ready) {
       this.script.onload = null;
       this.script.onerror = null;

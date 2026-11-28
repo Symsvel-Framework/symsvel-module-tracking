@@ -1,5 +1,6 @@
 import type { AuthorizedTracker } from './authorized-tracking';
 import type { TrackerAdapter, TrackerHandle } from './tracking-runtime';
+import { expireTrackerCookies } from './tracker-cookies';
 
 type GoogleCommand = (...args: unknown[]) => void;
 type GoogleWindow = Window & { dataLayer?: unknown[]; gtag?: GoogleCommand };
@@ -72,6 +73,7 @@ export class GoogleAnalyticsAdapter implements TrackerAdapter {
     if (entry.signal.aborted || this.active.get(entry.identifier) !== entry || entry.configured || !this.command) return;
     this.command('config', entry.identifier, {
       send_page_view: false, allow_google_signals: false, allow_ad_personalization_signals: false,
+      cookie_prefix: 'symsvel', cookie_domain: 'none', cookie_path: '/',
       page_location: this.browser.location.origin + '/', page_referrer: '', page_title: ''
     });
     entry.configured = true;
@@ -113,6 +115,9 @@ export class GoogleAnalyticsAdapter implements TrackerAdapter {
     if (this.active.get(entry.identifier) !== entry) return;
     this.disable(entry.identifier, true);
     this.active.delete(entry.identifier);
+    const cookies = ['symsvel_ga_' + entry.identifier.slice(2)];
+    if (this.active.size === 0) cookies.push('symsvel_ga');
+    expireTrackerCookies(this.document, this.browser.location.hostname, cookies);
     if (this.active.size === 0) {
       if (this.script && !this.ready) {
         this.script.onload = null;

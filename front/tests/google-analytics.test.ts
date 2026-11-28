@@ -7,12 +7,13 @@ function fixture() {
   const script = { async: false, referrerPolicy: '', src: '', onload: null as (() => void) | null,
     onerror: null as (() => void) | null, remove: vi.fn() };
   const append = vi.fn();
-  const browser: Record<string, unknown> = { location: { origin: 'https://example.test' } };
-  const document = { createElement: vi.fn(() => script), head: { appendChild: append } };
+  const browser: Record<string, unknown> = { location: { origin: 'https://example.test', hostname: 'example.test' } };
+  const expired: string[] = [];
+  const document = { createElement: vi.fn(() => script), head: { appendChild: append }, set cookie(value: string) { expired.push(value); } };
   const error = vi.fn();
   const adapter = new GoogleAnalyticsAdapter(browser as unknown as Window, document as unknown as Document, error);
   const commands = () => (browser.dataLayer as ArrayLike<unknown>[] ?? []).map(entry => Array.from(entry));
-  return { adapter, browser, script, append, error, commands };
+  return { adapter, browser, script, append, error, commands, expired };
 }
 describe('native GA4 adapter', () => {
   it('does not mutate the window or load a script before activation', () => {
@@ -36,6 +37,7 @@ describe('native GA4 adapter', () => {
     expect(f.commands().filter(c => c[0] === 'event')).toHaveLength(2);
     one.stop();
     expect(f.browser['ga-disable-G-ABC']).toBe(true);
+    expect(f.expired.map(c => c.split('=')[0])).toEqual(['symsvel_ga_ABC']);
     f.adapter.pageView('/about');
     expect(f.commands().at(-1)).toEqual(['event', 'page_view', expect.objectContaining({send_to: 'G-SECOND', page_location: 'https://example.test/about'})]);
     const count = f.commands().length;
@@ -44,6 +46,7 @@ describe('native GA4 adapter', () => {
     expect(f.commands()).toHaveLength(count);
     two.stop();
     expect(f.browser['ga-disable-G-SECOND']).toBe(true);
+    expect(f.expired.map(c => c.split('=')[0])).toEqual(['symsvel_ga_ABC', 'symsvel_ga_SECOND', 'symsvel_ga']);
   });
   it('stops pending initialization on withdrawal before SDK load', () => {
     const f = fixture();

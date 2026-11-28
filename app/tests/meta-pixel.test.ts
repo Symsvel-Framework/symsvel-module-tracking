@@ -6,12 +6,13 @@ function fixture() {
   const script = { async: false, referrerPolicy: '', src: '', onload: null as (() => void) | null,
     onerror: null as (() => void) | null, remove: vi.fn() };
   const append = vi.fn();
-  const browser: Record<string, unknown> = { location: { pathname: '/home', search: '', hash: '' } };
-  const document = { createElement: vi.fn(() => script), head: { appendChild: append } };
+  const browser: Record<string, unknown> = { location: { pathname: '/home', search: '', hash: '', hostname: 'front.example.test' } };
+  const expired: string[] = [];
+  const document = { createElement: vi.fn(() => script), head: { appendChild: append }, set cookie(value: string) { expired.push(value); } };
   const error = vi.fn();
   const adapter = new MetaPixelAdapter(browser as unknown as Window, document as unknown as Document, error);
   const commands = () => (browser.fbq as { queue: unknown[][] } | undefined)?.queue ?? [];
-  return { adapter, browser, script, append, error, commands };
+  return { adapter, browser, script, append, error, commands, expired };
 }
 describe('Meta Pixel adapter', () => {
   it('never touches Meta before explicit activation and loads one script for multiple IDs', () => {
@@ -40,6 +41,7 @@ describe('Meta Pixel adapter', () => {
     f.script.onload?.();
     expect(() => first.stop()).toThrow('document reset required');
     expect(f.commands().at(-1)).toEqual(['consent', 'revoke']);
+    expect(new Set(f.expired.map(c => c.split('=')[0]))).toEqual(new Set(['_fbp', '_fbc']));
     second.stop();
     expect(() => f.adapter.start(tracker, signal)).toThrow();
   });
