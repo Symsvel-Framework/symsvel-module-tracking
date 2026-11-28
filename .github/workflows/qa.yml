@@ -8,5 +8,138 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
+          extensions: pdo_sqlite
       - run: composer install --no-interaction --prefer-dist
       - run: composer qa
+  bo-integration:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: Symsvel-Framework/symsvel-bo
+          ref: dev
+          path: assembled-bo
+          token: ${{ github.token }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: assembled-bo/package-lock.json
+      - name: Assemble module routes like Tooling
+        run: |
+          mkdir -p assembled-bo/src/lib/modules/tracking/routes/tracking assembled-bo/src/routes/tracking
+          cp bo/src/lib/modules/tracking/*.ts assembled-bo/src/lib/modules/tracking/
+          cp bo/src/routes/tracking/+page.svelte assembled-bo/src/lib/modules/tracking/routes/tracking/+page.svelte
+          cp bo/tests/presentation.test.ts assembled-bo/src/lib/modules/tracking/presentation.test.ts
+          mkdir -p assembled-bo/src/lib/translations/tracking
+          cp bo/src/lib/translations/*.ts assembled-bo/src/lib/translations/tracking/
+          cat > assembled-bo/src/routes/tracking/+page.svelte <<'ROUTE'
+          <script lang="ts">
+            import ModulePage from '#lib/modules/tracking/routes/tracking/+page.svelte';
+          </script>
+          <ModulePage />
+          ROUTE
+      - working-directory: assembled-bo
+        run: npm ci --no-audit --no-fund
+      - working-directory: assembled-bo
+        run: |
+          npm run format
+          npm run check
+          npm run lint
+          npm run build
+          npx playwright install --with-deps chromium
+          npm run test:unit -- --run
+  browser-client:
+    runs-on: ubuntu-24.04
+    env:
+      PUBLIC_API_URL: http://localhost:4173
+      PUBLIC_TRACKING_ROUTES: /tracking-public
+    strategy:
+      fail-fast: false
+      matrix:
+        scope: [app, front]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: Symsvel-Framework/symsvel-${{ matrix.scope }}
+          ref: dev
+          path: assembled
+      - uses: actions/checkout@v4
+        with:
+          repository: Symsvel-Framework/symsvel-module-gdpr
+          ref: dev
+          path: gdpr
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: assembled/package-lock.json
+      - name: Assemble authorized projection clients
+        run: |
+          cmp app/src/lib/modules/tracking/authorized-tracking.ts front/src/lib/modules/tracking/authorized-tracking.ts
+          cmp app/src/lib/modules/tracking/tracking-runtime.ts front/src/lib/modules/tracking/tracking-runtime.ts
+          cmp app/src/lib/modules/tracking/google-analytics.ts front/src/lib/modules/tracking/google-analytics.ts
+          cmp app/src/lib/modules/tracking/meta-pixel.ts front/src/lib/modules/tracking/meta-pixel.ts
+          cmp app/src/lib/modules/tracking/tracker-cookies.ts front/src/lib/modules/tracking/tracker-cookies.ts
+          cmp app/src/lib/modules/tracking/tracking-routes.ts front/src/lib/modules/tracking/tracking-routes.ts
+          cmp app/src/lib/modules/tracking/consent-consumer.ts front/src/lib/modules/tracking/consent-consumer.ts
+          cmp app/tests/consent-consumer.test.ts front/tests/consent-consumer.test.ts
+          mkdir -p assembled/src/lib/modules/tracking assembled/src/lib/modules/gdpr
+          cp "${{ matrix.scope }}/src/lib/modules/tracking/"*.ts assembled/src/lib/modules/tracking/
+          cp "${{ matrix.scope }}/tests/authorized-tracking.test.ts" "${{ matrix.scope }}/tests/tracking-runtime.test.ts" "${{ matrix.scope }}/tests/google-analytics.test.ts" "${{ matrix.scope }}/tests/meta-pixel.test.ts" "${{ matrix.scope }}/tests/tracker-cookies.test.ts" "${{ matrix.scope }}/tests/tracking-routes.test.ts" assembled/src/lib/modules/tracking/
+          cp "${{ matrix.scope }}/tests/consent-consumer.test.ts" assembled/src/lib/modules/tracking/
+          cp "gdpr/${{ matrix.scope }}/src/lib/modules/gdpr/"*.ts assembled/src/lib/modules/gdpr/
+          cp "gdpr/${{ matrix.scope }}/src/lib/modules/gdpr/"*.svelte assembled/src/lib/modules/gdpr/
+          mkdir -p assembled/src/lib/modules/gdpr/routes/privacy assembled/src/routes/privacy
+          cp "gdpr/${{ matrix.scope }}/src/routes/privacy/+page.svelte" assembled/src/lib/modules/gdpr/routes/privacy/+page.svelte
+          cat > assembled/src/routes/privacy/+page.svelte <<'ROUTE'
+          <script lang="ts">
+            import ModulePage from '#lib/modules/gdpr/routes/privacy/+page.svelte';
+          </script>
+          <ModulePage />
+          ROUTE
+          mkdir -p assembled/src/lib/translations/gdpr
+          cp "gdpr/${{ matrix.scope }}/src/lib/translations/"*.ts assembled/src/lib/translations/gdpr/
+          cp "${{ matrix.scope }}/tests/tracking-integration.e2e.ts" assembled/src/routes/
+          # Synthetic routes exercise the real host layout; not shipped to projects.
+          mkdir -p assembled/src/routes/tracking-public assembled/src/routes/tracking-private
+          cat > assembled/src/routes/tracking-public/+page.svelte <<'ROUTE'
+          <script lang="ts">
+            import { resolve } from '$app/paths';
+          </script>
+          <h1>Public fixture</h1>
+          <a href={resolve('/tracking-private')}>Private fixture</a>
+          ROUTE
+          cat > assembled/src/routes/tracking-private/+page.svelte <<'ROUTE'
+          <script lang="ts">
+            import { resolve } from '$app/paths';
+          </script>
+          <h1>Private fixture</h1>
+          <a href={resolve('/tracking-public')}>Public fixture</a>
+          ROUTE
+          if [ "${{ matrix.scope }}" = app ]; then
+            # Fixture pages need no login; do not change production auth routes.
+            sed -i "s/return \['\/'/return ['\/tracking-public', '\/tracking-private', '\/'/" assembled/src/lib/app/public-routes.ts
+            grep -q tracking-public assembled/src/lib/app/public-routes.ts
+          fi
+      - working-directory: assembled
+        run: npm ci --no-audit --no-fund
+      - working-directory: assembled
+        run: |
+          npm run format
+          npm run check
+          npm run lint
+          npm run build
+          npm run test:unit -- --run --project server src/lib/modules/tracking/authorized-tracking.test.ts src/lib/modules/tracking/tracking-runtime.test.ts src/lib/modules/tracking/google-analytics.test.ts src/lib/modules/tracking/meta-pixel.test.ts src/lib/modules/tracking/tracker-cookies.test.ts src/lib/modules/tracking/tracking-routes.test.ts src/lib/modules/tracking/consent-consumer.test.ts
+      - working-directory: assembled
+        run: npx playwright install --with-deps chromium
+      - working-directory: assembled
+        run: npx playwright test src/routes/tracking-integration.e2e.ts --trace retain-on-failure
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: tracking-browser-${{ matrix.scope }}
+          path: assembled/test-results/
+          if-no-files-found: ignore
