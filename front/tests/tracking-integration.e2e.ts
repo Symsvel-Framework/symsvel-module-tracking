@@ -149,7 +149,13 @@ test('individual consent loads only GA4; both SDKs can be granted in a new docum
   expect(f.requests[0]).toContain('gtag/js');
   expect((await commands(page)).loadedMeta).toBe(false);
   await preferences(page).click();
+  // A second confirmed selection deliberately reloads a document that touched a SDK.
+  // Arm the document-navigation waiter before submitting the choice.
+  const reloaded = page.waitForEvent('framenavigated', frame => frame === page.mainFrame());
   await accept(page).click();
+  await reloaded;
+  await page.waitForLoadState('domcontentloaded');
+  await expect(preferences(page)).toBeVisible();
   await both(page);
   expect(f.requests.filter(url => url.includes('fbevents.js'))).toHaveLength(1);
 });
