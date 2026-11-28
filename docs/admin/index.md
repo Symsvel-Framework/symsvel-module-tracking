@@ -9,3 +9,7 @@ Le catalogue permet de préparer un identifiant Google Analytics 4 ou Meta Pixel
 ## Configuration prête à renseigner
 
 Lors de l'ajout, choisir Google Analytics 4 ou Meta Pixel : le formulaire propose automatiquement le nom, la finalité, la description et la politique de confidentialité du fournisseur. Renseigner l'identifiant, choisir App et/ou Front, vérifier les informations proposées et enregistrer. La création reste inactive et nécessite ensuite une activation explicite. Changer de fournisseur réinitialise l'identifiant et les informations proposées sans effacer les scopes ; ouvrir un traceur existant ne modifie rien. Les descriptions sont éditables et doivent refléter l'usage réel. Les loaders ne sont pas encore activés.
+
+## GA4 : préparation du compte fournisseur
+
+Pour le futur suivi de navigation géré par SymSvel, désactiver les pageviews automatiques liés aux changements d'historique dans les mesures améliorées GA4 et vérifier les destinations liées à la balise (notamment publicitaires). Le module ne contrôle pas les paramètres du compte Google ; vérifier également les données remontées et l'absence d'identifiants personnels avant activation. L'adaptateur GA4 est introduit côté code mais pas encore monté dans les interfaces.
