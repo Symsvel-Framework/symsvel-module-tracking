@@ -87,7 +87,32 @@ jobs:
           cp "${{ matrix.scope }}/src/lib/modules/tracking/"*.ts assembled/src/lib/modules/tracking/
           cp "${{ matrix.scope }}/tests/authorized-tracking.test.ts" "${{ matrix.scope }}/tests/tracking-runtime.test.ts" "${{ matrix.scope }}/tests/google-analytics.test.ts" "${{ matrix.scope }}/tests/meta-pixel.test.ts" "${{ matrix.scope }}/tests/tracker-cookies.test.ts" "${{ matrix.scope }}/tests/tracking-routes.test.ts" assembled/src/lib/modules/tracking/
           cp "${{ matrix.scope }}/tests/consent-consumer.test.ts" assembled/src/lib/modules/tracking/
-          cp "gdpr/${{ matrix.scope }}/src/lib/modules/gdpr/"{consent-client,consent-consumer}.ts assembled/src/lib/modules/gdpr/
+          cp "gdpr/${{ matrix.scope }}/src/lib/modules/gdpr/"*.ts assembled/src/lib/modules/gdpr/
+          cp "gdpr/${{ matrix.scope }}/src/lib/modules/gdpr/"*.svelte assembled/src/lib/modules/gdpr/
+          mkdir -p assembled/src/lib/translations/gdpr
+          cp "gdpr/${{ matrix.scope }}/src/lib/translations/"*.ts assembled/src/lib/translations/gdpr/
+          cp "${{ matrix.scope }}/tests/tracking-integration.e2e.ts" assembled/src/routes/
+          # Synthetic routes exercise the real host layout; not shipped to projects.
+          mkdir -p assembled/src/routes/tracking-public assembled/src/routes/tracking-private
+          cat > assembled/src/routes/tracking-public/+page.svelte <<'ROUTE'
+          <script lang="ts">
+            import { resolve } from '$app/paths';
+          </script>
+          <h1>Public fixture</h1>
+          <a href={resolve('/tracking-private')}>Private fixture</a>
+          ROUTE
+          cat > assembled/src/routes/tracking-private/+page.svelte <<'ROUTE'
+          <script lang="ts">
+            import { resolve } from '$app/paths';
+          </script>
+          <h1>Private fixture</h1>
+          <a href={resolve('/tracking-public')}>Public fixture</a>
+          ROUTE
+          if [ "${{ matrix.scope }}" = app ]; then
+            # Fixture pages need no login; do not change production auth routes.
+            sed -i "s/return \['\/'/return ['\/tracking-public', '\/tracking-private', '\/'/" assembled/src/lib/app/public-routes.ts
+            grep -q tracking-public assembled/src/lib/app/public-routes.ts
+          fi
       - working-directory: assembled
         run: npm ci --no-audit --no-fund
       - working-directory: assembled
@@ -97,3 +122,10 @@ jobs:
           npm run lint
           npm run build
           npm run test:unit -- --run --project server src/lib/modules/tracking/authorized-tracking.test.ts src/lib/modules/tracking/tracking-runtime.test.ts src/lib/modules/tracking/google-analytics.test.ts src/lib/modules/tracking/meta-pixel.test.ts src/lib/modules/tracking/tracker-cookies.test.ts src/lib/modules/tracking/tracking-routes.test.ts src/lib/modules/tracking/consent-consumer.test.ts
+      - working-directory: assembled
+        run: npx playwright install --with-deps chromium
+      - working-directory: assembled
+        env:
+          PUBLIC_API_URL: http://localhost:4173
+          PUBLIC_TRACKING_ROUTES: /tracking-public
+        run: npx playwright test src/routes/tracking-integration.e2e.ts
