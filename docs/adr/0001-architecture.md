@@ -60,3 +60,5 @@ La CI Tracking inclut désormais une suite Playwright dans les hôtes App et Fro
 Lors de pagehide, même un document n'ayant pas encore lancé de SDK oublie son permit. GDPR doit le republier après relecture serveur lors d'une restauration. Après une tentative SDK, toute erreur de projection ou changement de l'ensemble autorisé retire définitivement le document et arrête les handles ; une première erreur avant SDK peut être retentée. La suite Chromium vérifie également une intention concurrente avec les marqueurs GDPR distincts.
 
 Les chemins privacy et cookies sont exclus de la garde publique, y compris lorsqu'ils sont proposés par une configuration manuelle. Le texte BO reflète la condition effective GDPR + route autorisée.
+
+Intégration dev : la QA assemble la totalité des entrées GDPR utilisées, y compris la route légale publique, et vérifie que son document ne contient aucun SDK après une navigation depuis une route autorisée. Dépendance GDPR dev-dev.

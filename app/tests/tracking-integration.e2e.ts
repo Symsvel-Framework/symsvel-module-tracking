@@ -294,3 +294,17 @@ test('a concurrent consent intent prevents reactivation after an older successfu
     Object.keys(localStorage).filter(key => key.startsWith('symsvel.gdpr.' + scope + '.blocked')), scope);
   expect(blockers.length).toBeGreaterThan(0);
 });
+
+test('the real GDPR privacy page is never tracked', async ({ page, context }) => {
+  const f = await fixture(context);
+  await page.goto(publicUrl);
+  await accept(page).click();
+  await both(page);
+  await page.getByRole('link', { name: /Données personnelles et cookies|Personal data and cookies/ }).click();
+  await expect(page).toHaveURL(/\/privacy\/?$/);
+  await expect(page.getByRole('heading', { name: /Données personnelles et cookies|Personal data and cookies/ })).toBeVisible();
+  await expect(preferences(page)).toBeVisible();
+  expect((await commands(page)).loadedGa).toBe(false);
+  expect((await commands(page)).loadedMeta).toBe(false);
+  expect(f.requests).toHaveLength(2);
+});
